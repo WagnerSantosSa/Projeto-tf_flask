@@ -33,14 +33,18 @@
       const messageElement = document.createElement('div');
       messageElement.classList.add('message');
       messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
+
       if (imageUrl) {
         const img = document.createElement('img');
         img.src = imageUrl;
-        img.alt = 'Imagem enviada';
+        img.alt = 'Imagem';
         img.classList.add('chat-image');
-        messageElement.appendChild(document.createElement('br'));
+        img.style.maxWidth = '200px';
+        img.style.display = 'block';
+        img.style.marginTop = '5px';
         messageElement.appendChild(img);
       }
+
       chatBox.appendChild(messageElement);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -65,10 +69,15 @@
       const file = imageInput.files[0];
       if (!file) return;
 
+      // Mostrar pré-visualização da imagem enviada no chat
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        appendMessage('Você (imagem enviada)', '', event.target.result);
+      };
+      reader.readAsDataURL(file);
+
       const formData = new FormData();
       formData.append('image', file);
-
-      appendMessage('Imagem enviada', file.name);
 
       const response = await fetch('/upload', {
         method: 'POST',
