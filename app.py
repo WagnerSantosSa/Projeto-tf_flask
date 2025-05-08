@@ -94,7 +94,7 @@ def upload():
     print(f"Diagnóstico: {predicted_class} (Acurácia: {confidence:.2f}%)")
 
     response = f"Diagnóstico: {predicted_class} (Acurácia: {confidence:.2f}%)"
-    return jsonify({'response': response, 'image_url': f"/{filepath}"})
+    return jsonify({'response': response, 'image_url': f"/static/uploads/{filename}"})
 
 if __name__ == '__main__':
     app.run()
