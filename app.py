@@ -4,7 +4,6 @@ import os
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-import gdown
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
@@ -14,25 +13,15 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite de 16MB para uploa
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# ====== NOVO BLOCO PARA BAIXAR O MODELO DO GOOGLE DRIVE ======
-model_url = 'https://drive.google.com/uc?export=download&id=1meZ3bTrVSFs8PxcdGXw115Ac87DTVWYj'
+# ====== CARREGAMENTO DO MODELO LOCAL ======
 model_path = 'modelo_treinado.h5'
-
-if not os.path.exists(model_path):
-    print('Baixando o modelo com gdown...')
-    gdown.download(model_url, model_path, quiet=False)
-    print('Download concluído!')
-else:
-    print('Modelo já existe localmente.')
-
-# ====== CARREGAMENTO DO MODELO ======
 model = tf.keras.models.load_model(model_path)
 CLASSES = ['Sem Doença', 'Com Doença']
 
 # Processamento de imagem
 def process_image(image_path):
     image = Image.open(image_path).convert('RGB')
-    image = image.resize((128, 128))  # ajuste se necessário
+    image = image.resize((128, 128))  # ajuste conforme seu treinamento
     image_array = np.array(image) / 255.0
     image_array = np.expand_dims(image_array, axis=0)
     return image_array
