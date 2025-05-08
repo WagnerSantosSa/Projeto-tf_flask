@@ -1,5 +1,6 @@
 Flask
-gunicorn
 tensorflow
 numpy
-pillow
+Pillow
+requests
+werkzeug
