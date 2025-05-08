@@ -90,4 +90,4 @@ def upload():
     return jsonify({'response': response, 'image_url': f"/{filepath}"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
