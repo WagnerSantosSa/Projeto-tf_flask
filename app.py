@@ -4,21 +4,24 @@ import os
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-import requests
+import gdown
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite de 16MB para uploads
+
+# Cria a pasta de uploads se não existir
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 # ====== NOVO BLOCO PARA BAIXAR O MODELO DO GOOGLE DRIVE ======
 model_url = 'https://drive.google.com/uc?export=download&id=1meZ3bTrVSFs8PxcdGXw115Ac87DTVWYj'
 model_path = 'modelo_treinado.h5'
 
 if not os.path.exists(model_path):
-    print('Baixando o modelo...')
-    r = requests.get(model_url)
-    with open(model_path, 'wb') as f:
-        f.write(r.content)
-    print('Download do modelo concluído!')
+    print('Baixando o modelo com gdown...')
+    gdown.download(model_url, model_path, quiet=False)
+    print('Download concluído!')
 else:
     print('Modelo já existe localmente.')
 
@@ -74,6 +77,8 @@ def upload():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
+    print(f"Imagem recebida e salva em: {filepath}")
+
     image = process_image(filepath)
     prediction = model.predict(image)[0]
     confidence = float(np.max(prediction)) * 100
@@ -85,6 +90,8 @@ def upload():
         confidence = 100 - confidence  # reflete incerteza
     else:
         predicted_class = CLASSES[class_index]
+
+    print(f"Diagnóstico: {predicted_class} (Acurácia: {confidence:.2f}%)")
 
     response = f"Diagnóstico: {predicted_class} (Acurácia: {confidence:.2f}%)"
     return jsonify({'response': response, 'image_url': f"/{filepath}"})
