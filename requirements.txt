@@ -1,5 +1,5 @@
 Flask==2.2.5
 tflite-runtime==2.14.0
-numpy
+numpy<2
 Pillow
 gunicorn
