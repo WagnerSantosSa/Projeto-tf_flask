@@ -1,25 +1,40 @@
 from flask import Flask, request, jsonify, render_template
 import numpy as np
 from PIL import Image
-import tensorflow as tf
+
+try:
+    import tflite_runtime.interpreter as tflite
+    print("Usando tflite-runtime")
+except ImportError:
+    import tensorflow as tf
+    tflite = tf.lite
+    print("Usando tensorflow.lite")
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite de 16MB para uploads
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# ====== CARREGAMENTO DO MODELO LOCAL ======
-model_path = 'modelo_treinado.h5'
-model = tf.keras.models.load_model(model_path)
+model_path = 'modelo_treinado.tflite'
+interpreter = tflite.Interpreter(model_path=model_path)
+interpreter.allocate_tensors()
+
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
 CLASSES = ['Sem Doença', 'Com Doença']
 
-# Processamento de imagem a partir de stream
 def process_image(image_stream):
     image = Image.open(image_stream).convert('RGB')
-    image = image.resize((128, 128))  # ajuste conforme seu treinamento
+    image = image.resize((128, 128))
     image_array = np.array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=0)
+    image_array = np.expand_dims(image_array, axis=0).astype(np.float32)
     return image_array
 
-# Respostas de saudação
+def predict_tflite(image_array):
+    interpreter.set_tensor(input_details[0]['index'], image_array)
+    interpreter.invoke()
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    return output_data[0]
+
 def verificar_saudacao(mensagem):
     saudacoes = ['bom dia', 'boa tarde', 'boa noite', 'olá', 'ola', 'oi']
     for s in saudacoes:
@@ -58,14 +73,13 @@ def upload():
     print(f"Imagem recebida (não salva no disco).")
 
     image = process_image(file.stream)
-    prediction = model.predict(image)[0]
+    prediction = predict_tflite(image)
     confidence = float(np.max(prediction)) * 100
     class_index = np.argmax(prediction)
 
-    # Lógica aprimorada: incerteza abaixo de 50% reverte o diagnóstico
     if class_index == 0 and confidence < 50:
         predicted_class = 'Com Doença'
-        confidence = 100 - confidence  # reflete incerteza
+        confidence = 100 - confidence
     else:
         predicted_class = CLASSES[class_index]
 
